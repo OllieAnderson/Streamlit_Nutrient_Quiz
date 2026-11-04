@@ -1,82 +1,45 @@
+import streamlit as st
+import csv
+import random
+from pathlib import Path
 
-# --------------------------------------------------
-# QUIZ SETUP
-# --------------------------------------------------
+st.title("Answer Generation Test")
 
-if not st.session_state.quiz_started:
+CSV_FILE = Path(__file__).parent / "Database.csv"
 
-    st.subheader("Quiz Setup")
+with open(CSV_FILE, "r", encoding="utf-8-sig") as file:
+    questions = list(csv.DictReader(file))
 
-    # GROUP 1
+question = questions[0]
 
-    groups1 = get_groups(questions, "Group_1")
+st.subheader(question["Question"])
 
-    selected_group1 = st.multiselect(
-        "Choose Group 1 categories to INCLUDE",
-        groups1,
-        default=[],
-        key="group1_selection"
-    )
+correct_answer = question["Answer"]
 
-    filtered1 = [
-        (i, q)
-        for i, q in enumerate(questions)
-        if set(q["Group_1"]) & set(selected_group1)
-    ]
+possible_answers = list({
+    q["Answer"]
+    for q in questions
+    if q["Answer"] != correct_answer and q["Answer"]
+})
 
-    # GROUP 2
+st.write("Correct answer:", correct_answer)
+st.write("Available distractors:", len(possible_answers))
 
-    groups2 = get_groups(
-        [q for i, q in filtered1],
-        "Group_2"
-    )
+if len(possible_answers) >= 3:
 
-    group2_key = "group2_" + str(tuple(selected_group1))
+    distractors = random.sample(possible_answers, 3)
 
-    selected_group2 = st.multiselect(
-        "Choose Group 2 categories to INCLUDE",
-        groups2,
-        default=[],
-        key=group2_key
-    )
+    options = [correct_answer, *distractors]
 
-    filtered2 = [
-        (i, q)
-        for i, q in filtered1
-        if set(q["Group_2"]) & set(selected_group2)
-    ]
+    random.shuffle(options)
 
-    st.write(
-        f"Questions included: {len(filtered2)}"
-    )
+    selected = st.radio("Choose your answer:", options)
 
-    if len(filtered2) < 4:
+    if st.button("Submit Answer"):
+        if selected == correct_answer:
+            st.success("Correct!")
+        else:
+            st.error(f"Incorrect. The answer was {correct_answer}.")
 
-        st.warning(
-            "Select at least 4 questions to start the quiz."
-        )
-
-    if st.button(
-        "Start Quiz",
-        disabled=len(filtered2) < 4
-    ):
-
-        question_indices = [
-            i for i, q in filtered2
-        ]
-
-        random.shuffle(question_indices)
-
-        st.session_state.remaining = question_indices
-        st.session_state.total_questions = len(question_indices)
-
-        st.session_state.correct_count = 0
-        st.session_state.attempts = 0
-
-        st.session_state.result = None
-        st.session_state.options = None
-
-        st.session_state.completed = False
-        st.session_state.quiz_started = True
-
-        st.rerun()
+else:
+    st.error("Not enough distinct answers.")
