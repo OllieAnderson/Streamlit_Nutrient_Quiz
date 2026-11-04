@@ -2,21 +2,33 @@ import streamlit as st
 import csv
 from pathlib import Path
 
-st.title("Database Test")
+st.title("Quiz Test")
 
 CSV_FILE = Path(__file__).parent / "Database.csv"
 
-st.write("Looking for database...")
+with open(CSV_FILE, "r", encoding="utf-8-sig") as file:
+    questions = list(csv.DictReader(file))
 
-if CSV_FILE.exists():
-    st.success("Database.csv found!")
+st.write(f"Loaded {len(questions)} questions")
 
-    with open(CSV_FILE, "r", encoding="utf-8-sig") as file:
-        reader = csv.DictReader(file)
-        rows = list(reader)
+groups = sorted({
+    group.strip()
+    for q in questions
+    for group in q["Group_1"].split(";")
+    if group.strip()
+})
 
-    st.write("Number of questions:", len(rows))
-    st.write("Column headers:", reader.fieldnames)
+selected = st.multiselect(
+    "Choose Group 1",
+    groups,
+    default=groups
+)
 
-else:
-    st.error("Database.csv not found!")
+st.write("Selected groups:", selected)
+
+filtered = [
+    q for q in questions
+    if set(q["Group_1"].split(";")) & set(selected)
+]
+
+st.write(f"Questions selected: {len(filtered)}")
