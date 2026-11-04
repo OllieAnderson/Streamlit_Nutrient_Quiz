@@ -2,33 +2,55 @@ import streamlit as st
 import csv
 from pathlib import Path
 
-st.title("Quiz Test")
+st.title("Group 2 Test")
 
 CSV_FILE = Path(__file__).parent / "Database.csv"
 
 with open(CSV_FILE, "r", encoding="utf-8-sig") as file:
     questions = list(csv.DictReader(file))
 
-st.write(f"Loaded {len(questions)} questions")
-
-groups = sorted({
-    group.strip()
+groups1 = sorted({
+    x.strip()
     for q in questions
-    for group in q["Group_1"].split(";")
-    if group.strip()
+    for x in q["Group_1"].split(";")
+    if x.strip()
 })
 
-selected = st.multiselect(
-    "Choose Group 1",
-    groups,
-    default=groups
+selected1 = st.multiselect(
+    "Group 1",
+    groups1,
+    default=groups1
 )
 
-st.write("Selected groups:", selected)
-
-filtered = [
+filtered1 = [
     q for q in questions
-    if set(q["Group_1"].split(";")) & set(selected)
+    if set(x.strip() for x in q["Group_1"].split(";")) & set(selected1)
 ]
 
-st.write(f"Questions selected: {len(filtered)}")
+groups2 = sorted({
+    x.strip()
+    for q in filtered1
+    for x in q["Group_2"].split(";")
+    if x.strip()
+})
+
+selected2 = st.multiselect(
+    "Group 2",
+    groups2,
+    default=groups2
+)
+
+filtered2 = [
+    q for q in filtered1
+    if set(x.strip() for x in q["Group_2"].split(";")) & set(selected2)
+]
+
+st.write(f"Questions selected: {len(filtered2)}")
+
+if st.button("Start Quiz"):
+    st.session_state.questions = filtered2
+    st.session_state.started = True
+
+if st.session_state.get("started"):
+    st.success("Quiz started!")
+    st.write(st.session_state.questions[0]["Question"])
